@@ -1,4 +1,7 @@
-colorlog==6.7.0
-homeassistant==2023.8.2
-pip>=21.0,<23.3
-ruff==0.0.285
+colorlog
+homeassistant==2025.1.0
+ruff==0.9.9
+flask==3.1.0
+pytest==8.3.5
+pytest-asyncio==0.26.0
+pytest_socket==0.7.0
