@@ -4,11 +4,35 @@ import random
 from pathlib import Path
 import argparse
 import requests
+import coloredlogs
 import logging
 
 DEVICE_CONF_FILE = "config.json"
 RESPONSES_SUBDIR = "responses"
 
+# Create a logger object.
+logger = logging.getLogger(__name__)
+
+# If you don't want to see log messages from libraries, you can pass a
+# specific logger object to the install() function. In this case only log
+# messages originating from that logger will show up on the terminal.
+coloredlogs.install(level='DEBUG', logger=logger)
+
+coloredlogs.install(fmt='%(asctime)s %(levelname)s %(message)s')
+
+class record_call:
+    def __init__(self, resulting_filename: str, relative_url: str, category_special: bool, de_identify_mac: bool):
+        self.resulting_filename = resulting_filename
+        self.relative_url = relative_url
+        self.category_special = category_special
+        self.de_identify_mac = de_identify_mac
+
+class category_details:
+    def __init__(self, id: str, category: dict, commands: dict):
+        self.id = id
+        self.label = category
+        self.items = commands
+    
 def collect_responses(device_id):
     """
     Collect all JSON responses from predefined URLs and create different results
@@ -19,78 +43,86 @@ def collect_responses(device_id):
     response_root = responses_directory(device_id)
 
     # with the result from getCategories one should loop through getCategory & getCommands
-    url_mapping = {
 
-        "ai_get_devicestatus.json" : "/ai?command=getDeviceStatus",
-        "ai_get_fwversion.json" : "/ai?command=getFWVersion",
-        "ai_get_lastpushnotifications.json" : "/ai?command=getLastPUSHNotifications",
-        "ai_get_macaddress.txt" : "/ai?command=getMacAddress",
-        "ai_get_modeldescription.txt" : "/ai?command=getModelDescription",
-        "ai_get_updatestatus.json" : "/ai?command=getUpdateStatus",
-        "hh_get_categories.json" : "/hh?command=getCategories",
-        "hh_get_commands_settings.json" : "/hh?command=getCommands&value=settings",
-        "hh_get_ecoinfo.json" : "/hh?command=getEcoInfo",
-        "hh_get_fwversion.json" : "/hh?command=getFWVersion",
-        "hh_get_zhmode.json" : "/hh?command=getZHMode"   ,
-        "ai_get_invalid_command.txt" : "/ai?command=getErrorAnswer42",
-        "hh_get_invalid_command.txt" : "/hh?command=getErrorAnswer42"
+    record_calls = {
+
+        record_call("ai_get_devicestatus.json", "/ai?command=getDeviceStatus", False, False),
+        record_call("ai_get_fwversion.json", "/ai?command=getFWVersion", False, False),
+        record_call("ai_get_lastpushnotifications.json", "/ai?command=getLastPUSHNotifications", False, False),
+        record_call("ai_get_macaddress.txt", "/ai?command=getMacAddress", category_special=False, de_identify_mac=True),
+        record_call("ai_get_modeldescription.txt", "/ai?command=getModelDescription", False, False),
+        record_call("ai_get_updatestatus.json", "/ai?command=getUpdateStatus", False, False),
+
+        record_call("hh_get_categories.json", "/hh?command=getCategories", category_special=True, de_identify_mac=False),
+
+        record_call("hh_get_ecoinfo.json", "/hh?command=getEcoInfo", False, False),
+        record_call("hh_get_fwversion.json", "/hh?command=getFWVersion", False, False),
+        record_call("hh_get_zhmode.json", "/hh?command=getZHMode", False, False),
+
+        record_call("ai_get_invalid_command.txt", "/ai?command=getErrorAnswer42", False, False),
+        record_call("hh_get_invalid_command.txt", "/hh?command=getErrorAnswer42", False, False),
     }
 
-    for filename, relative_url in url_mapping.items():
-        url = config["base_url"] + relative_url
+    for current_call in record_calls:
+        url = config["base_url"] + current_call.relative_url
 
-        output_file = os.path.join(response_root, filename)
+        output_file = os.path.join(response_root, current_call.resulting_filename)
         response = requests.get(url.strip())
 
-        if relative_url == "/hh?command=getCategories":
-            #Special treatment
-            a=1
-            # collect_categories_details(config["base_url"], response.text)
+        if current_call.category_special:
+            collect_categories_details(output_file, config["base_url"], response.json())
 
-        elif filename.endswith('.txt'):
+        elif current_call.resulting_filename == "ai_get_macaddress.txt":
+            # More general purpose search was not worth it yet
+            with open(output_file, 'w') as f:
+                f.write(config["fake_mac_address"])
+
+        elif current_call.resulting_filename.endswith('.txt'):
             with open(output_file, 'w') as f:
                 f.write(response.text)
             logging.info(f"Response saved to {output_file}")
 
-        elif filename.endswith('.json'):
+        elif current_call.resulting_filename.endswith('.json'):
+
+            response_json=response.json()
+            if "Serial" in response_json:
+                response_json["Serial"] = config["fake_device_serial_1"]
+            if "fn" in response_json:
+                response_json["fn"] = config["fake_device_serial_1"]
+            if "an" in response_json:
+                response_json["an"] = config["fake_device_serial_2"]
+            if "deviceUuid" in response_json:
+                response_json["deviceUuid"] = config["fake_device_serial_2"]
+
             if "400.03" in response.text:
                 logging.error(f"The response from {url} contains 400.03 error.")
             else:
                 with open(output_file, 'w') as f:
-                    json.dump(response.json(), f, indent=2)
+                    json.dump(response_json, f, indent=2)
                 logging.info(f"Response saved to {output_file}")
         else:
             logging.error(f"Error: Unrecognized file type for {output_file}. Skipped collecting response.")
 
-def collect_categories_details(filename, base_url, response_text):
 
-    # categories = {}
+def collect_categories_details(filename: str, base_url: str, categories_json: dict):
 
-    categories_json = json.loads(response_text)
+    categories = []
 
-    for category in categories_json["categories"]:
-        category_id = category["id"]
-        category_url = f"{base_url}/hh?command=getCategory&value={category_id}"
-        category_commands_url = f"{base_url}/hh?command=getCommands&value={category_id}"
+    # Don't really know what the commands means for the different categories
+    for curr_category_id in categories_json:
+        category_url = f"{base_url}/hh?command=getCategory&value={curr_category_id}"
+        command_url = f"{base_url}/hh?command=getCommands&value={curr_category_id}"
 
-        category_response = requests.get(category_url)
-        detail_response = requests.get(category_url)
+        category = requests.get(category_url).json()
+        commands = requests.get(command_url).json()
 
-        # category_description = category["description"]
+        categories.append(category_details(curr_category_id, category, commands))
 
-        
+    categories_data = [{"id": c.id, "category": c.label, "commands": c.items} for c in categories]
+    with open(filename, 'w') as f:
+        json.dump(categories_data, f, indent=2)
 
-        # categories.add(category_description, json.loads(response_text))
-
-        # "hh_get_categories.json" : "/hh?command=getCategories",
-
-
-
-        #     "hh_get_category_userxsettings.json" : "/hh?command=getCategory&value=UserXsettings",
-        # "hh_get_category_ecomanagement.json" : "/hh?command=getCategory&value=EcoManagement",
-        # "hh_get_category_settings.json" : "/hh?command=getCategory&value=settings",
-        # "hh_get_command_userxsettings.json" : "/hh?command=getCommands&value=UserXsettings",
-        # "hh_get_command_ecomanagement.json" : "/hh?command=getCommands&value=EcoManagement",
+    logging.info(f"Response saved to {filename}")
 
 
 def fixtures_directory() -> str:
@@ -117,7 +149,7 @@ def rmdir(directory):
             item.unlink()
     directory.rmdir()
 
-def get_config_from_existing_file(device_id):
+def get_config_from_existing_file(device_id) -> dict:
     with open(device_config_file(device_id)) as f:
         config = json.load(f)
 
@@ -153,7 +185,7 @@ def select_device() -> str:
 
     fixtures_root = fixtures_directory()
     # Show list of subdirectories in the current directory
-    subdirectories = [d for d in os.listdir(fixtures_root) if os.path.isdir(os.path.join(fixtures_root, d))]
+    subdirectories = [d for d in os.listdir(fixtures_root) if os.path.isdir(os.path.join(fixtures_root, d)) and d != '__pycache__']
 
     # Select the device to be used
     print("")
@@ -186,8 +218,9 @@ def select_device() -> str:
     if os.path.exists(responses_directory(device_id)):
         print(f"Responses for device {device_id} already exists. Delete exiting ones")
         rmdir(responses_dir)
-    else:
-        os.makedirs(responses_dir)
+        print("")
+
+    os.makedirs(responses_dir)
 
     return device_id
 

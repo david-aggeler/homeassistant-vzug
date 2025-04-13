@@ -1,3 +1,4 @@
+import json
 import os
 
 from flask import Flask, jsonify, request, send_from_directory
@@ -48,20 +49,37 @@ def register_routes(app, response_directory):
         #cache_avoidance_number = request.args.get('_')
 
         if command == "getCategories":
-            return file_content_or_error(response_directory, "hh_get_categories.json")
+            result = []
+            with open(os.path.join(response_directory, "hh_get_categories.json")) as f:
+                categories_content = json.loads(f)
+                for category in categories_content:
+                    result.append(category["id"])
+
         elif command == "getCategory":
-            if value == "UserXsettings":
-                return file_content_or_error(response_directory, "hh_get_category_userxsettings.json")
-            elif value == "EcoManagement":
-                return file_content_or_error(response_directory, "hh_get_category_ecomanagement.json")
-            elif value == "settings":
-                return file_content_or_error(response_directory, "hh_get_category_settings.json")
-            else:
-                return jsonify({"error": ["code", "400.03"]}), 400
+
+            with open(os.path.join(response_directory, "hh_get_categories.json")) as f:
+                categories_content = json.loads(f)
+
+                # Find category that matches the value
+                matching_category = next((c for c in categories_content if c["id"] == value), None)
+                if matching_category:
+                    result.append(matching_category)
+                    return jsonify(matching_category["category"])
+                else:
+                    return jsonify({"error": ["code", "400.03"]}), 400
 
         elif command == "getCommands":
+            with open(os.path.join(response_directory, "hh_get_categories.json")) as f:
+                categories_content = json.loads(f)
 
-            return file_content_or_error(response_directory, "hh_get_commands.json")
+                # Find category that matches the value
+                matching_category = next((c for c in categories_content if c["id"] == value), None)
+                if matching_category:
+                    result.append(matching_category)
+                    return jsonify(matching_category["commands"])
+                else:
+                    return jsonify({"error": ["code", "400.03"]}), 400
+
         elif command == "getEcoInfo":
             return file_content_or_error(response_directory, "hh_get_ecoinfo.json")
         elif command == "getFWVersion":
