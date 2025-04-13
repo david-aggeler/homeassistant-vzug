@@ -32,7 +32,7 @@ class category_details:
         self.id = id
         self.label = category
         self.items = commands
-    
+
 def collect_responses(device_id):
     """
     Collect all JSON responses from predefined URLs and create different results
@@ -72,14 +72,19 @@ def collect_responses(device_id):
         if current_call.category_special:
             collect_categories_details(output_file, config["base_url"], response.json())
 
-        elif current_call.resulting_filename == "ai_get_macaddress.txt":
-            # More general purpose search was not worth it yet
-            with open(output_file, 'w') as f:
-                f.write(config["fake_mac_address"])
-
         elif current_call.resulting_filename.endswith('.txt'):
-            with open(output_file, 'w') as f:
-                f.write(response.text)
+
+            if current_call.resulting_filename == "ai_get_macaddress.txt":
+                # More general purpose search was not worth it yet
+                with open(output_file, 'w') as f:
+                    f.write(config["fake_mac_address"])
+            elif current_call.resulting_filename == "ai_get_modeldescription.txt":
+                with open(output_file, 'w') as f:
+                    f.write(f"{response.text} Emulator")
+            else:
+                with open(output_file, 'w') as f:
+                    f.write(response.text)
+
             logging.info(f"Response saved to {output_file}")
 
         elif current_call.resulting_filename.endswith('.json'):
@@ -98,7 +103,7 @@ def collect_responses(device_id):
                 logging.error(f"The response from {url} contains 400.03 error.")
             else:
                 with open(output_file, 'w') as f:
-                    json.dump(response_json, f, indent=2)
+                    json.dump(response_json, f, indent=2, ensure_ascii=False)
                 logging.info(f"Response saved to {output_file}")
         else:
             logging.error(f"Error: Unrecognized file type for {output_file}. Skipped collecting response.")

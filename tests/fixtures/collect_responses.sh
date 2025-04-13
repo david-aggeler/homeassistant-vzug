@@ -56,12 +56,21 @@ responses=(
     ["ai_get_updatestatus.json"]="{$BASE_URL}/ai?command=getUpdateStatus"
 
     ["hh_get_categories.json"]="{$BASE_URL}/hh?command=getCategories"
+    # with the result from getCategories one should loop thorugh getCategory & getCommands
     ["hh_get_category_userxsettings.json"]="{$BASE_URL}/hh?command=getCategory&value=UserXsettings"
     ["hh_get_category_ecomanagement.json"]="{$BASE_URL}/hh?command=getCategory&value=EcoManagement"
-    ["hh_get_commands.json"]="{$BASE_URL}/hh?command=getCommands"
+    ["hh_get_category_settings.json"]="{$BASE_URL}/hh?command=getCategory&value=settings"
+
+    ["hh_get_category_userxsettings.json"]="{$BASE_URL}/hh?command=getCommands&value=UserXsettings"
+    ["hh_get_category_ecomanagement.json"]="{$BASE_URL}/hh?command=getCommands&value=EcoManagement"    
+    ["hh_get_commands_settings.json"]="{$BASE_URL}/hh?command=getCommands&value=settings"
+
     ["hh_get_ecoinfo.json"]="{$BASE_URL}/hh?command=getEcoInfo"
     ["hh_get_fwversion.json"]="{$BASE_URL}/hh?command=getFWVersion"
     ["hh_get_zhmode.json"]="{$BASE_URL}/hh?command=getZHMode"   
+
+    ["ai_get_invalid_command.txt"]="{$BASE_URL}/ai?command=getErrorAnswer42"
+    ["hh_get_invalid_command.txt"]="{$BASE_URL}/hh?command=getErrorAnswer42"
 )
 
 #loop through the APIs and collect responses and save them to files
@@ -91,9 +100,15 @@ for filename in "${!responses[@]}"; do
         mv "$filename_tmp" "./$DEVICE_ID/$filename"
         echo "Response saved to ./$DEVICE_ID/$filename"
     elif [[ $filename == *.json ]]; then
-        # Format the json file
-        jq '.' "$filename_tmp" > "./$DEVICE_ID/$filename" && rm "$filename_tmp"
-        echo "Response saved to ./$DEVICE_ID/$filename"
+        # check content for 400.03
+        if grep -q "400.03" "$filename_tmp"; then
+            echo "Error: The response from $url contains 400.03 error."
+            rm "$filename_tmp"
+        else
+            # Format the json file
+            jq '.' "$filename_tmp" > "./$DEVICE_ID/$filename" && rm "$filename_tmp"
+            echo "Response saved to ./$DEVICE_ID/$filename"
+        fi        
     else
         # If the file extension is not recognized, delete the temporary file
         echo "Error: Unrecognized file type for ./$DEVICE_ID/$filename. Deleting temporary file."
