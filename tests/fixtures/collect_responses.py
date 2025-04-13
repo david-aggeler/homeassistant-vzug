@@ -3,6 +3,7 @@ import json
 import random
 from pathlib import Path
 import argparse
+from time import sleep
 import requests
 import coloredlogs
 import logging
@@ -67,7 +68,16 @@ def collect_responses(device_id):
         url = config["base_url"] + current_call.relative_url
 
         output_file = os.path.join(response_root, current_call.resulting_filename)
-        response = requests.get(url.strip())
+
+        i = 0
+        while (i < 10):
+            response = requests.get(url.strip())
+            if response.status_code == 503:
+                logging.warning(f" {current_call.relative_url}: {response.status_code} - {response.text}")
+                sleep(2)
+                i += 1
+            else:
+                break
 
         if current_call.category_special:
             collect_categories_details(output_file, config["base_url"], response.json())
