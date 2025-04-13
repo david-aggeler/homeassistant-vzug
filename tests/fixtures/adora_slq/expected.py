@@ -1,7 +1,7 @@
 
 import custom_components.vzug.api as api
 
-### This file contains expected decoded results 
+### This file contains expected decoded results
 
 ai_model_description = "Adora SLQ"
 
@@ -58,28 +58,26 @@ ai_update_status = api.UpdateStatus(
 
 ai_last_push_notifications: list[api.PushNotification] = [
     api.PushNotification(
-        date = "2025-04-10T18:15:27Z",
-        message = "Programm 40°C Ecoprogramm beendet - Energie: 0,5kWh, Wasser: 42ℓ."
+        date = "2025-04-13T17:15:13Z",
+        message = "Programm 30°C Ecoprogramm beendet - Energie: 0,4kWh, Wasser: 45ℓ."
     ),
     api.PushNotification(
-        date = "2025-04-05T20:58:43Z",
-        message = "Programm 60°C Buntwäsche beendet - Energie: 0,9kWh, Wasser: 35ℓ."
+        date = "2025-04-13T15:14:50Z",
+        message = "Programm 40°C Dampfglätten beendet - Energie: 0,3kWh, Wasser: 1ℓ."
     )
 ]
 
-## Pretty silly getCatergory API just returns one value
-hh_categories: list[(str, str)] = [
-    ("UserXsettings", {'description': 'Benutzereinstellungen'}),
-    ("EcoManagement", {'description': "EcoManagement"})
-]
 
+hh_categories: list[(str, int, int)] = [
+    ("settings", 1, 5 ),
+]
 
 hh_eco_info = api.EcoInfo(
 
     energy = api.EcoInfoMetric(
-        total = 90.4,
+        total = 96.3,
         average = 0.5,
-        program = 0.5
+        program = 0.4
     )
 )
 

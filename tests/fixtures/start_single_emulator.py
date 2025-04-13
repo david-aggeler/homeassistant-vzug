@@ -1,9 +1,10 @@
 import json
 import os
-
-from flask import Flask, jsonify, request, send_from_directory
 import argparse
 import logging
+import tests.fixtures.shared as shared
+
+from flask import Flask, jsonify, request, send_from_directory
 
 ### If no parameters are specified, show the models to choose from
 ### Flask only allows one app.run at the same time
@@ -98,22 +99,12 @@ def register_routes(app, response_directory):
 
 
 def start_emulator(port, device_id):
-    """ Get the project root from the environment variable """
-    project_root = os.getenv("PROJECT_ROOT")
-    if not project_root:
-        raise ValueError("PROJECT_ROOT environment variable is not set.")
-
-    response_directory = os.path.join(os.getenv("PROJECT_ROOT"), "tests/fixtures", device_id)
-
-    # check if the directory for the desired device exists
-    if not os.path.exists(response_directory):
-        raise ValueError(f"Directory {response_directory} does not exist.")
 
     # Create a Flask app
     app = Flask(f"V-Zug Emulator {device_id}")
 
     # Register routes
-    register_routes(app, response_directory)
+    register_routes(app, shared.responses_directory(device_id))
 
     # Run the app
     app.run(port=port, debug=False, threaded=True)
@@ -121,22 +112,26 @@ def start_emulator(port, device_id):
 def select_device() -> str:
     """ Used for interactive debugging, when no command line parameters are provided """
 
-    response_root = f"{os.getenv("PROJECT_ROOT")}/tests/fixtures"
-
-    # Show list of subdirectories in the current directory
-    subdirectories = [d for d in os.listdir(response_root) if os.path.isdir(os.path.join(response_root, d))]
+    devices = shared.get_devices()
 
     # Select the device to be used
-    print("Devices:")
-    for idx, subdir in enumerate(subdirectories, start=1):
-        print(f"{idx}: {subdir}")
+    print("")
+    print("--------------------------------------------------------------------------------------")
+    print("Select an existing device")
+    print("--------------------------------------------------------------------------------------")
 
-    response_id = input("Please enter device # use: ")
-    if not response_id.isdigit() or int(response_id) < 1 or int(response_id) > len(subdirectories):
+    for idx, device in enumerate(devices, start=1):
+        print(f"{idx}: {device}")
+
+    print("")
+
+    response_id = input("Please enter device number: ")
+
+    if not response_id.isdigit() or int(response_id) < 1 or int(response_id) > len(devices):
         print("Invalid device ID. Please enter a valid number.")
         exit(1)
 
-    return subdirectories[int(response_id)]
+    return devices[int(response_id) - 1]
 
 def main() -> None:
     parser = argparse.ArgumentParser(description='Process some integers.')

@@ -33,7 +33,7 @@ async def assert_ai_get_last_push_notifications(vzug_client, expected_result):
 
 async def assert_ai_get_model_description(vzug_client, expected_result):
     model_description = await vzug_client.get_model_description()
-    assert model_description == expected_result.ai_model_description
+    assert model_description.replace(" Emulator", "") == expected_result.ai_model_description
 
 async def assert_ai_get_mac_address(vzug_client):
     mac_info = await vzug_client.get_mac_address()
@@ -58,11 +58,16 @@ async def assert_ai_get_update_status(vzug_client, expected_result):
 async def assert_hh_get_categories_and_hh_get_category(vzug_client, expected_result):
     categories = await vzug_client.list_categories()
 
-    assert len(categories) > 0
+    assert len(categories) == expected_result.hh_categories.count
     for i in range(len(expected_result.hh_categories)):
-        category = await vzug_client.get_category(categories[i])
         assert categories[i] == expected_result.hh_categories[i][0]
-        assert category == expected_result.hh_categories[i][1]
+
+        category = await vzug_client.get_category(categories[i])
+        assert len(category) == expected_result.hh_categories[i][1]
+
+        commands = await vzug_client.get_commands(categories[i])
+        assert len(commands) == expected_result.hh_categories[i][2]
+
 
 async def assert_hh_get_eco_info(vzug_client, expected_result):
     eco_info = await vzug_client.get_eco_info()

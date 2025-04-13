@@ -1,12 +1,11 @@
-
 import aiohttp
 import pytest
 
 import custom_components.vzug.api as api
-import tests.expected.adora_slq as expected_result
+import tests.fixtures.adora_slq.expected as expected_result
 import tests.integration.test_core as test_core
 
-BASE_URL = "http://127.0.0.1"
+BASE_URL = "http://127.0.0.1:5000"
 
 ########################################################################
 # Doing a fixture to create vzug_client not yet work.
