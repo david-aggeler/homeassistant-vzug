@@ -1,5 +1,6 @@
 
 import custom_components.vzug.api as api
+from tests.fixtures.shared import category_expectation
 
 ### This file contains expected decoded results
 
@@ -67,10 +68,11 @@ ai_last_push_notifications: list[api.PushNotification] = [
     )
 ]
 
-
-hh_categories: list[(str, int, int)] = [
-    ("settings", 1, 5 ),
+hh_categories = [
+    category_expectation("settings", 1, 19)
 ]
+
+hh_total_commands = 82
 
 hh_eco_info = api.EcoInfo(
 

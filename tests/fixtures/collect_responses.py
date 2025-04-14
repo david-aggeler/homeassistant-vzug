@@ -16,10 +16,15 @@ class record_call:
         self.de_identify_mac = de_identify_mac
 
 class category_details:
-    def __init__(self, id: str, category: dict, commands: dict):
+    def __init__(self, id: str, category: dict, commands):
         self.id = id
-        self.label = category
-        self.items = commands
+        self.category = category
+        self.commands = commands
+
+class command_details:
+    def __init__(self, id: str, details: dict):
+        self.id = id
+        self.details = details
 
 def collect_responses(device_id):
     """
@@ -41,7 +46,7 @@ def collect_responses(device_id):
         record_call("ai_get_modeldescription.txt", "/ai?command=getModelDescription", False, False),
         record_call("ai_get_updatestatus.json", "/ai?command=getUpdateStatus", False, False),
 
-        record_call("hh_get_categories.json", "/hh?command=getCategories", category_special=True, de_identify_mac=False),
+        record_call("NA", "/hh?command=getCategories", category_special=True, de_identify_mac=False),
 
         record_call("hh_get_ecoinfo.json", "/hh?command=getEcoInfo", False, False),
         record_call("hh_get_fwversion.json", "/hh?command=getFWVersion", False, False),
@@ -67,7 +72,10 @@ def collect_responses(device_id):
                 break
 
         if current_call.category_special:
-            collect_categories_details(output_file, config["base_url"], response.json())
+            collect_categories_details( \
+                os.path.join(response_root,"hh_get_categories.json"), \
+                os.path.join(response_root,"hh_get_command_details.json"), \
+                config["base_url"], response.json())
 
         elif current_call.resulting_filename.endswith('.txt'):
 
@@ -106,9 +114,11 @@ def collect_responses(device_id):
             logging.error(f"Error: Unrecognized file type for {output_file}. Skipped collecting response.")
 
 
-def collect_categories_details(filename: str, base_url: str, categories_json: dict):
+def collect_categories_details(filename_categories: str, filename_commands: str, base_url: str, categories_json: dict):
 
     categories = []
+
+    all_command_details = []
 
     # Don't really know what the commands means for the different categories
     for curr_category_id in categories_json:
@@ -120,11 +130,24 @@ def collect_categories_details(filename: str, base_url: str, categories_json: di
 
         categories.append(category_details(curr_category_id, category, commands))
 
-    categories_data = [{"id": c.id, "category": c.label, "commands": c.items} for c in categories]
-    with open(filename, 'w') as f:
-        json.dump(categories_data, f, indent=2)
+        # Get next level down json. Based on the API, the commands need to be device unique
+        for curr_command in commands:
+            command_url = f"{base_url}/hh?command=getCommand&value={curr_command}"
+            command_details_json = requests.get(command_url).json()
+            all_command_details.append(command_details(curr_command, command_details_json))
 
-    logging.info(f"Response saved to {filename}")
+
+    categories_data = [{"id": c.id, "category": c.category, "commands": c.commands} for c in categories]
+    details_data = [{"id": d.id, "details": d.details} for d in all_command_details]
+
+    with open(filename_categories, 'w') as f:
+        json.dump(categories_data, f, indent=2, ensure_ascii=False)
+
+    with open(filename_commands, 'w') as f:
+        json.dump(details_data, f, indent=2, ensure_ascii=False)
+
+    logging.info(f"Response saved to {filename_categories}")
+    logging.info(f"Response saved to {filename_commands}")
 
 
 def rmdir(directory):

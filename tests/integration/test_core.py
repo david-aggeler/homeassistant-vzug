@@ -55,19 +55,27 @@ async def assert_ai_get_update_status(vzug_client, expected_result):
         assert update_status["components"][i]["progress"]["download"] == expected_result.ai_update_status["components"][i]["progress"]["download"]
         assert update_status["components"][i]["progress"]["installation"] == expected_result.ai_update_status["components"][i]["progress"]["installation"]
 
-async def assert_hh_get_categories_and_hh_get_category(vzug_client, expected_result):
+async def assert_hh_get_categories_and_commands(vzug_client, expected_result):
     categories = await vzug_client.list_categories()
 
-    assert len(categories) == expected_result.hh_categories.count
+    assert len(categories) == len(expected_result.hh_categories)
+    total_commands = 0
+
     for i in range(len(expected_result.hh_categories)):
-        assert categories[i] == expected_result.hh_categories[i][0]
+        assert categories[i] == expected_result.hh_categories[i].id
 
         category = await vzug_client.get_category(categories[i])
-        assert len(category) == expected_result.hh_categories[i][1]
+        assert len(category) == expected_result.hh_categories[i].count_description
 
-        commands = await vzug_client.get_commands(categories[i])
-        assert len(commands) == expected_result.hh_categories[i][2]
+        commands = await vzug_client.list_commands(categories[i])
+        assert len(commands) == expected_result.hh_categories[i].count_commands
 
+        for curr_command in commands:
+            details = await vzug_client.get_command(curr_command)
+            total_commands = total_commands + len(details)
+
+    # Rather artifical number. But still a good inidcator whether we got all the details
+    assert total_commands == expected_result.hh_total_commands
 
 async def assert_hh_get_eco_info(vzug_client, expected_result):
     eco_info = await vzug_client.get_eco_info()

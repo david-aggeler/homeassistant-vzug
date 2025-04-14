@@ -1,5 +1,6 @@
 
 import custom_components.vzug.api as api
+from tests.fixtures.shared import category_expectation
 
 ### This file contains expected decoded results 
 
@@ -67,12 +68,12 @@ ai_last_push_notifications: list[api.PushNotification] = [
     )
 ]
 
-## Pretty silly getCatergory API just returns one value
-hh_categories: list[(str, str)] = [
-    ("UserXsettings", {'description': 'Benutzereinstellungen'}),
-    ("EcoManagement", {'description': "EcoManagement"})
+hh_categories = [
+    category_expectation("UserXsettings", 1, 8),
+    category_expectation("EcoManagement", 1, 5)
 ]
 
+hh_total_commands = 56
 
 hh_eco_info = api.EcoInfo(
 

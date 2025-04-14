@@ -34,3 +34,9 @@ def get_devices() -> str:
     """ Return list of subdirectories in fixtures"""
     fixtures_root = fixtures_directory()
     return [d for d in os.listdir(fixtures_root) if os.path.isdir(os.path.join(fixtures_root, d)) and d != '__pycache__']
+
+class category_expectation():
+    def __init__(self, id: str, count_description: int, count_commands):
+        self.id = id
+        self.count_description = count_description
+        self.count_commands = count_commands

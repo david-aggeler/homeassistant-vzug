@@ -52,10 +52,10 @@ async def test_ai_get_update_status():
         await test_core.assert_ai_get_update_status(vzug_client, expected_result)
 
 @pytest.mark.asyncio
-async def test_hh_get_categories_and_hh_get_category():
+async def test_hh_get_categories_and_commands():
     async with aiohttp.ClientSession() as session:
         vzug_client = api.VZugApi(session, BASE_URL)
-        await test_core.assert_hh_get_categories_and_hh_get_category(vzug_client, expected_result)
+        await test_core.assert_hh_get_categories_and_commands(vzug_client, expected_result)
 
 @pytest.mark.asyncio
 async def test_hh_get_eco_info():
