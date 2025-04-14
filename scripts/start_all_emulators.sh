@@ -16,8 +16,8 @@ echo "----------------------------------------------------------------------"
 echo "Starting emulators on 5000 and 5001 ..."
 echo "----------------------------------------------------------------------"
 
-python "./fixtures/start_single_emulator.py" --port 5000 --device_id "adora_slq" & 
-python "./fixtures/start_single_emulator.py" --port 5001 --device_id "adora_tslq_wp" & 
+python "$PROJECT_ROOT/tests/fixtures/start_single_emulator.py" --port 5000 --device_id "adora_slq" & 
+python "$PROJECT_ROOT/tests/fixtures/start_single_emulator.py" --port 5001 --device_id "adora_tslq_wp" & 
 
 sleep 5
 
