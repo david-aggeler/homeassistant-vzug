@@ -1,7 +1,7 @@
-import json
-import os
 import argparse
+import json
 import logging
+import os
 import tests.fixtures.shared as shared
 
 from flask import Flask, jsonify, request, send_from_directory

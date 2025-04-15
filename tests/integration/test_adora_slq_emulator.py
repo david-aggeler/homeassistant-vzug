@@ -1,18 +1,11 @@
 import aiohttp
-import pytest
-
 import custom_components.vzug.api as api
+import pytest
 import tests.fixtures.adora_slq.expected as expected_result
 import tests.integration.test_core as test_core
 
 BASE_URL = "http://127.0.0.1:5000"
 
-########################################################################
-# Doing a fixture to create vzug_client not yet work.
-# Async & Fixture seems a bad combo
-#
-# Because of the imports, this is the file to be copied per device
-# Having multiple files also helps for the visualization of test result
 ########################################################################
 
 @pytest.mark.asyncio

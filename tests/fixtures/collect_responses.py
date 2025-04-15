@@ -1,12 +1,13 @@
-import os
-import json
-import random
-from pathlib import Path
 import argparse
-from time import sleep
-import requests
+import json
 import logging
+import os
+import random
+import requests
+
+from pathlib import Path
 from tests.fixtures import shared
+from time import sleep
 
 class record_call:
     def __init__(self, resulting_filename: str, relative_url: str, category_special: bool, de_identify_mac: bool):

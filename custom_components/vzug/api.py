@@ -3,7 +3,7 @@ import dataclasses
 import logging
 import time
 from collections.abc import Callable
-from datetime import datetime, timezone
+from datetime import datetime, UTC
 from typing import Any, Literal, TypedDict
 
 import aiohttp
@@ -237,7 +237,7 @@ class VZugApi:
         zh_mode = await self.get_zh_mode(default_on_error=True)
 
         device = await self.get_device_status(default_on_error=default_on_error)
-        device_fetched_at = datetime.now(timezone.utc)
+        device_fetched_at = datetime.now(UTC)
 
         return AggState(
             zh_mode=zh_mode,

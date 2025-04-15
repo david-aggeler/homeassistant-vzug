@@ -2,7 +2,7 @@
 import custom_components.vzug.api as api
 from tests.fixtures.shared import category_expectation
 
-### This file contains expected decoded results 
+### This file contains expected decoded results
 
 ai_model_description = "Adora TSLQ WP"
 
