@@ -22,7 +22,9 @@
   "issue_tracker": "https://github.com/siku2/hass-vzug/issues",
   "loggers": [],
   "mqtt": [],
-  "requirements": [],
+  "requirements": [
+    "json-repair"
+  ],
   "ssdp": [],
   "usb": [],
   "version": "0.0.0",

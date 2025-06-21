@@ -6,6 +6,7 @@ import time
 from collections.abc import Callable
 from datetime import UTC, datetime
 from typing import Any, Literal, TypedDict, cast
+import json_repair
 
 import httpx
 from yarl import URL
@@ -307,9 +308,17 @@ class VZugApi:
             except ValueError:
                 if resp.content:
                     _LOGGER.debug("invalid json payload: %s", resp.content)
-                    raise
-                # we got an empty response, we just treat this as 'None'
-                data = None
+                    # Try to repair the JSON response before giving up
+                    try:
+                        repaired_json = json_repair.repair_json(resp.text)
+                        data = json.loads(repaired_json)
+                        _LOGGER.debug("successfully repaired json: %s", data)
+                    except Exception as repair_error:
+                        _LOGGER.debug("json repair failed: %s", repair_error)
+                        raise  # Re-raise the original ValueError
+                else:
+                    # we got an empty response, we just treat this as 'None'
+                    data = None
 
             _LOGGER.debug("data: %s", data)
             if expected_type is list and data is None:
@@ -317,9 +326,9 @@ class VZugApi:
                 data: Any = []
 
             if expected_type is not None:
-                assert isinstance(
-                    data, expected_type
-                ), f"data type mismatch ({type(data)} != {expected_type})"
+                assert isinstance(data, expected_type), (
+                    f"data type mismatch ({type(data)} != {expected_type})"
+                )
             if reject_empty:
                 assert len(data) > 0, "empty response rejected"
             return data
@@ -568,12 +577,22 @@ class VZugApi:
         return data["value"]
 
     async def get_eco_info(self, *, default_on_error: bool = False) -> EcoInfo:
-        return await self._command(
+        result = await self._command(
             "hh",
             command="getEcoInfo",
             expected_type=dict,
             value_on_err=(lambda: EcoInfo()) if default_on_error else None,
         )
+
+        water_total = result.get("water", {}).get("total", 0)
+        energy_total = result.get("energy", {}).get("total", 0)
+
+        # If both water and energy totals are 0, we return an empty EcoInfo
+        # This is to handle cases where the API returns 0s for both metrics
+        if water_total == 0 and energy_total == 0:
+            return EcoInfo()
+
+        return result
 
     async def get_device_info(self, *, default_on_error: bool = False) -> DeviceInfo:
         # 'getAPIVersion' can be used to get only the API version
